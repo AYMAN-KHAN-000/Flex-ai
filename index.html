@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff7f5">
+  <title>FLEX — OpenRouter Chat</title>
+  <link rel="icon" type="image/svg+xml" href="icon.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #fff7f5;
+      --white: #fff;
+      --ink: #302523;
+      --muted: #827875;
+      --line: #eadfdd;
+      --red: #b73832;
+      --red-dark: #922d28;
+      --rose: #f9e5e2;
+      --sidebar: #fff0ed;
+      --sidebar-muted: #8f706c;
+      --coral: #d95f54;
+      --shadow: 0 18px 55px rgba(75, 36, 32, .12);
+      font-family: "DM Sans", "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; min-height: 100vh; color: var(--ink); background: var(--paper); }
+    button, input, textarea, select { font: inherit; }
+    button { color: inherit; }
+    .app { display: grid; grid-template-columns: 252px minmax(0, 1fr); min-height: 100vh; }
+    .sidebar { display: flex; flex-direction: column; min-height: 100vh; padding: 24px 16px 18px; color: var(--ink); background: var(--sidebar); }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 2px 9px 30px; font-size: 18px; font-weight: 700; letter-spacing: 0; }
+    .brand-logo { display: block; width: 31px; height: 31px; flex: 0 0 auto; border-radius: 7px; object-fit: cover; }
+    .brand small { display: block; margin-top: 1px; color: var(--sidebar-muted); font: 10px "DM Mono", monospace; letter-spacing: 0; }
+    .new-chat { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 43px; border: 1px solid #e5c0bb; border-radius: 8px; color: #6b3531; background: #f9e4e0; cursor: pointer; transition: background .18s, border-color .18s; }
+    .new-chat:hover { border-color: #d99b93; background: #f3d5d1; }
+    .new-chat svg { width: 16px; height: 16px; }
+    .side-label { margin: 28px 9px 10px; color: #9a645e; font: 10px "DM Mono", monospace; letter-spacing: 0; text-transform: uppercase; }
+    .history { display: grid; gap: 3px; }
+    .history-item { display: flex; align-items: center; width: 100%; min-height: 37px; padding: 0 10px; border: 0; border-radius: 6px; overflow: hidden; color: var(--sidebar-muted); background: transparent; text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+    .history-item:hover, .history-item.active { color: #872b26; background: #f7dfdc; }
+    .history-empty { padding: 4px 9px; color: #9c7a76; font-size: 12px; line-height: 1.6; }
+    .sidebar-foot { margin-top: auto; padding: 14px 8px 0; border-top: 1px solid #ecd9d6; }
+    .connection { display: flex; align-items: center; gap: 9px; color: #69514d; font-size: 12px; }
+    .connection-dot { width: 8px; height: 8px; border-radius: 50%; background: #aa8f8b; box-shadow: 0 0 0 3px rgba(160,80,70,.13); }
+    .connection.ready .connection-dot { background: #c54b40; box-shadow: 0 0 0 3px rgba(197,75,64,.17); }
+    .sidebar-note { margin: 9px 0 0 17px; color: #927b77; font-size: 11px; }
+    .main { display: flex; flex-direction: column; min-width: 0; min-height: 100vh; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; min-height: 65px; padding: 0 34px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.66); }
+    .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .topbar-title { font-size: 13px; font-weight: 600; }
+    .topbar-actions { display: flex; align-items: center; }
+    .mobile-brand, .mobile-new { display: none; }
+    .conversation { display: flex; flex: 1; flex-direction: column; width: min(800px, 100%); margin: 0 auto; padding: 30px 28px 22px; }
+    .messages { display: flex; flex: 1; flex-direction: column; gap: 25px; padding: 10px 0 28px; }
+    .welcome { display: flex; flex: 1; flex-direction: column; justify-content: center; min-height: 340px; padding: 12px 0 42px; animation: enter .45s ease both; }
+    .welcome-kicker { display: flex; align-items: center; gap: 8px; color: var(--red); font: 11px "DM Mono", monospace; letter-spacing: 0; text-transform: uppercase; }
+    .welcome-kicker::before { width: 22px; height: 1px; background: var(--coral); content: ""; }
+    h1 { max-width: 610px; margin: 17px 0 12px; font-size: clamp(36px, 5vw, 54px); line-height: 1.06; letter-spacing: 0; font-weight: 500; }
+    h1 span { color: var(--red); }
+    .welcome-copy { max-width: 460px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
+    .suggestions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; max-width: 610px; margin-top: 30px; }
+    .suggestion { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 53px; padding: 10px 12px; border: 1px solid #eedfdd; border-radius: 7px; color: #5b4b48; background: rgba(255,255,255,.68); text-align: left; font-size: 12px; cursor: pointer; transition: transform .18s, border-color .18s, background .18s; }
+    .suggestion:hover { transform: translateY(-1px); border-color: #dca7a1; background: white; }
+    .suggestion svg { flex: 0 0 auto; width: 14px; height: 14px; color: var(--red); }
+    .message { display: grid; grid-template-columns: 31px minmax(0, 1fr); gap: 13px; animation: enter .22s ease both; }
+    .avatar { display: grid; width: 30px; height: 30px; place-items: center; overflow: hidden; border-radius: 8px; color: var(--red-dark); background: var(--rose); }
+    .message.user .avatar { color: #9a433d; background: #fae6e3; }
+    .avatar svg { width: 16px; height: 16px; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .message-body { min-width: 0; padding-top: 2px; }
+    .message-heading { display: flex; align-items: baseline; gap: 9px; margin-bottom: 7px; font-size: 12px; font-weight: 700; }
+    .message-heading span { color: #9a8b88; font: 10px "DM Mono", monospace; font-weight: 400; }
+    .message-text { overflow-wrap: anywhere; color: #4a3b38; font-size: 14px; line-height: 1.75; white-space: pre-wrap; }
+    .message.assistant .message-text { color: #302523; }
+    .message-text.error { color: #a33e32; }
+    .typing { display: inline-flex; align-items: center; gap: 4px; height: 20px; }
+    .typing i { width: 5px; height: 5px; border-radius: 50%; background: #c8847c; animation: pulse 1s infinite ease-in-out; }
+    .typing i:nth-child(2) { animation-delay: .14s; }
+    .typing i:nth-child(3) { animation-delay: .28s; }
+    .composer-wrap { position: sticky; bottom: 0; padding-top: 10px; background: linear-gradient(transparent, var(--paper) 16%); }
+    .composer { position: relative; padding: 13px 13px 10px 16px; border: 1px solid #eadedc; border-radius: 9px; background: white; box-shadow: 0 5px 18px rgba(75,36,32,.045); transition: border-color .2s, box-shadow .2s; }
+    .composer:focus-within { border-color: #dda7a0; box-shadow: 0 5px 22px rgba(183,56,50,.09); }
+    .composer textarea { display: block; width: 100%; min-height: 28px; max-height: 180px; padding: 3px 3px 9px 0; resize: none; border: 0; outline: none; color: var(--ink); background: transparent; font-size: 14px; line-height: 1.55; }
+    .composer textarea::placeholder { color: #a39895; }
+    .composer-tools { display: flex; align-items: center; justify-content: space-between; }
+    .composer-hint { color: #9a8d8a; font-size: 10px; }
+    .send-button { display: grid; width: 34px; height: 34px; place-items: center; border: 0; border-radius: 7px; color: white; background: var(--red); cursor: pointer; transition: background .18s, transform .18s; }
+    .send-button:hover:not(:disabled) { transform: translateY(-1px); background: var(--red-dark); }
+    .send-button:disabled { background: #d6c4c1; cursor: not-allowed; }
+    .send-button svg { width: 16px; height: 16px; }
+    .fine-print { margin: 10px 0 0; color: #a39895; text-align: center; font-size: 10px; }
+    .overlay { position: fixed; z-index: 5; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(50,31,29,.38); animation: fade .16s ease both; }
+    .dialog { width: min(430px, 100%); padding: 24px; border: 1px solid #eadfdd; border-radius: 10px; background: white; box-shadow: var(--shadow); animation: enter .2s ease both; }
+    .dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
+    .dialog h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .dialog-copy { margin: 7px 0 19px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .icon-button { display: grid; width: 30px; height: 30px; place-items: center; border: 0; border-radius: 6px; color: #857673; background: transparent; cursor: pointer; }
+    .icon-button:hover { color: var(--ink); background: #f8efed; }
+    .icon-button svg { width: 16px; height: 16px; }
+    .field-label { display: block; margin-bottom: 7px; color: #5b4b48; font-size: 11px; font-weight: 600; }
+    .key-input-wrap { display: flex; align-items: center; gap: 8px; padding-right: 8px; border: 1px solid #eadfdd; border-radius: 7px; }
+    .key-input-wrap:focus-within { border-color: #d78980; box-shadow: 0 0 0 3px rgba(183,56,50,.08); }
+    .key-input { width: 100%; min-width: 0; padding: 11px 12px; border: 0; outline: 0; border-radius: 7px; font: 12px "DM Mono", monospace; }
+    .key-input::placeholder { color: #a99c99; }
+    .reveal-key { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 5px; color: #857673; background: transparent; cursor: pointer; }
+    .reveal-key svg { width: 15px; height: 15px; }
+    .security-note { display: flex; gap: 8px; margin: 12px 0 20px; color: #817371; font-size: 11px; line-height: 1.55; }
+    .security-note svg { width: 15px; height: 15px; flex: 0 0 auto; color: var(--red); }
+    .dialog-actions { display: flex; justify-content: space-between; gap: 10px; }
+    .text-button { padding: 0 10px; border: 0; color: #9b5144; background: transparent; font-size: 11px; cursor: pointer; }
+    .text-button:hover { text-decoration: underline; }
+    .save-button { min-height: 37px; padding: 0 15px; border: 0; border-radius: 6px; color: white; background: var(--red); font-size: 12px; font-weight: 600; cursor: pointer; }
+    .save-button:hover { background: var(--red-dark); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+    @keyframes enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%, 60%, 100% { opacity: .35; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    @media (max-width: 700px) {
+      .app { display: block; }
+      .sidebar { display: none; }
+      .main { min-height: 100dvh; }
+      .topbar { min-height: 57px; padding: 0 14px; }
+      .mobile-brand { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 700; }
+      .mobile-brand .brand-logo { width: 24px; height: 24px; border-radius: 6px; }
+      .topbar-title { display: none; }
+      .topbar-left { gap: 5px; }
+      .topbar-actions { gap: 4px; }
+      .mobile-new { display: grid; width: 32px; height: 32px; place-items: center; border: 0; border-radius: 6px; color: #655650; background: transparent; cursor: pointer; }
+      .mobile-new svg { width: 17px; height: 17px; }
+      .conversation { min-height: calc(100dvh - 57px); padding: 16px 16px 13px; }
+      .messages { gap: 21px; padding-top: 6px; }
+      .welcome { min-height: 360px; justify-content: center; padding-bottom: 24px; }
+      h1 { max-width: 460px; margin-top: 14px; font-size: clamp(35px, 10vw, 48px); }
+      .welcome-copy { font-size: 13px; }
+      .suggestions { gap: 7px; margin-top: 23px; }
+      .suggestion { min-height: 60px; padding: 9px; font-size: 11px; }
+      .suggestion svg { width: 12px; }
+      .composer { padding: 11px 11px 9px 13px; }
+      .composer-hint { font-size: 9px; }
+      .fine-print { font-size: 9px; }
+    }
+    @media (max-width: 380px) {
+      .mobile-brand { font-size: 12px; }
+      .suggestions { grid-template-columns: 1fr; }
+      .suggestion { min-height: 43px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Chat navigation">
+      <div class="brand">
+        <img class="brand-logo" src="icon.webp" alt="">
+        <span>FLEX<small>OPENROUTER CHAT</small></span>
+      </div>
+      <button class="new-chat" id="newChat"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>New conversation</button>
+      <div class="side-label">Recent</div>
+      <div class="history" id="history"><div class="history-empty">Your conversations will show up here.</div></div>
+      <div class="sidebar-foot">
+        <div class="connection ready"><span class="connection-dot"></span><span>FLEX is ready</span></div>
+        <div class="sidebar-note">OpenRouter · GPT-4o mini</div>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="mobile-brand"><img class="brand-logo" src="icon.webp" alt="">FLEX</div>
+          <span class="topbar-title">New conversation</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="mobile-new" id="mobileNewChat" title="New conversation" aria-label="New conversation"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        </div>
+      </header>
+      <section class="conversation" aria-label="Conversation">
+        <div class="messages" id="messages" aria-live="polite"></div>
+        <div class="composer-wrap">
+          <form class="composer" id="chatForm">
+            <label for="prompt" class="sr-only">Message</label>
+            <textarea id="prompt" rows="1" placeholder="Message FLEX..." autocomplete="off"></textarea>
+            <div class="composer-tools"><span class="composer-hint">Enter to send · Shift + Enter for a new line</span><button class="send-button" id="sendButton" type="submit" title="Send message" aria-label="Send message"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          </form>
+          <p class="fine-print">Responses can be inaccurate. Check important details.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script>
+    const messagesEl = document.getElementById("messages");
+    const promptEl = document.getElementById("prompt");
+    const chatForm = document.getElementById("chatForm");
+    const sendButton = document.getElementById("sendButton");
+    const historyEl = document.getElementById("history");
+    const OPENROUTER_MODEL = "openai/gpt-4o-mini";
+    const OPENROUTER_API_KEY = "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";
+    let busy = false;
+    let chat = [];
+    let conversations = [];
+
+    const icons = {
+      assistant: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 14.4 9.6 20.5 12l-6.1 2.4L12 20.5l-2.4-6.1L3.5 12l6.1-2.4L12 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="m19 14 .9 2.1 2.1.9-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14Z" fill="currentColor"/></svg>',
+      user: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.6"/><path d="M5 20c.7-3.3 3.2-5 7-5s6.3 1.7 7 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+    };
+
+    function showWelcome() {
+      messagesEl.innerHTML = `
+        <div class="welcome">
+          <div class="welcome-kicker">A clearer kind of conversation</div>
+          <h1>Good ideas start<br>with <span>a question.</span></h1>
+          <p class="welcome-copy">One thoughtful place to work with FLEX. Ask something, explore a draft, or follow a new line of thinking.</p>
+          <div class="suggestions">
+            <button class="suggestion" data-prompt="Help me turn a rough idea into a clear plan.">Help me make a plan <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="suggestion" data-prompt="Explain a difficult concept in simple terms, with an example.">Explain something difficult <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="suggestion" data-prompt="Review this code and point out the most important improvements:\n\n">Review a piece of code <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="suggestion" data-prompt="Give me three fresh approaches to this problem: ">Find a fresh perspective <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>`;
+      messagesEl.querySelectorAll(".suggestion").forEach((button) => {
+        button.addEventListener("click", () => {
+          promptEl.value = button.dataset.prompt;
+          resizePrompt();
+          promptEl.focus();
+          promptEl.setSelectionRange(promptEl.value.length, promptEl.value.length);
+        });
+      });
+    }
+
+    function addMessage(role, content, options = {}) {
+      const article = document.createElement("article");
+      article.className = `message ${role}`;
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      if (role === "assistant") {
+        const logo = document.createElement("img");
+        logo.src = "icon.webp";
+        logo.alt = "";
+        avatar.append(logo);
+      } else {
+        avatar.innerHTML = icons.user;
+      }
+      const body = document.createElement("div");
+      body.className = "message-body";
+      const heading = document.createElement("div");
+      heading.className = "message-heading";
+      heading.append(role === "user" ? "You" : "FLEX");
+      const text = document.createElement("div");
+      text.className = "message-text";
+      text.textContent = content;
+      if (options.error) text.classList.add("error");
+      body.append(heading, text);
+      article.append(avatar, body);
+      messagesEl.append(article);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      article.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      return text;
+    }
+
+    function updateHistory() {
+      if (chat.length && chat[0].role === "user") {
+        const title = chat[0].content.trim().replace(/\s+/g, " ").slice(0, 48) || "New conversation";
+        const found = conversations.find((item) => item.id === currentConversationId);
+        if (found) { found.title = title; found.messages = chat; }
+        else conversations.unshift({ id: currentConversationId, title, messages: chat });
+        conversations = conversations.slice(0, 12);
+      }
+      renderHistory();
+    }
+
+    let currentConversationId = makeId();
+    function makeId() { return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; }
+
+    function renderHistory() {
+      historyEl.replaceChildren();
+      if (!conversations.length) {
+        const empty = document.createElement("div");
+        empty.className = "history-empty";
+        empty.textContent = "Your conversations will show up here.";
+        historyEl.append(empty);
+        return;
+      }
+      conversations.forEach((item) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `history-item${item.id === currentConversationId ? " active" : ""}`;
+        button.textContent = item.title;
+        button.title = item.title;
+        button.addEventListener("click", () => loadConversation(item.id));
+        historyEl.append(button);
+      });
+    }
+
+    function loadConversation(id) {
+      const selected = conversations.find((item) => item.id === id);
+      if (!selected) return;
+      currentConversationId = selected.id;
+      chat = selected.messages.map((message) => ({ ...message }));
+      messagesEl.replaceChildren();
+      chat.forEach((message) => addMessage(message.role, message.content));
+      document.querySelector(".topbar-title").textContent = selected.title;
+      renderHistory();
+    }
+
+    function newConversation() {
+      if (busy) return;
+      if (chat.length) updateHistory();
+      chat = [];
+      currentConversationId = makeId();
+      document.querySelector(".topbar-title").textContent = "New conversation";
+      showWelcome();
+      renderHistory();
+      promptEl.value = "";
+      resizePrompt();
+      promptEl.focus();
+    }
+
+    function resizePrompt() {
+      promptEl.style.height = "auto";
+      promptEl.style.height = `${Math.min(promptEl.scrollHeight, 180)}px`;
+    }
+
+    async function streamReply(requestMessages, target) {
+      const headers = { "Authorization": `Bearer ${OPENROUTER_API_KEY}`, "Content-Type": "application/json", "X-Title": "FLEX Chat" };
+      if (location.protocol === "http:" || location.protocol === "https:") headers["HTTP-Referer"] = location.origin;
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ model: OPENROUTER_MODEL, messages: requestMessages, stream: true })
+      });
+      if (!response.ok) {
+        let detail = `Request failed (${response.status})`;
+        try {
+          const data = await response.json();
+          detail = data.error?.message || detail;
+        } catch { /* Keep the HTTP status when the error response is not JSON. */ }
+        throw new Error(detail);
+      }
+      if (!response.body) throw new Error("This browser does not support streamed responses.");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let result = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data:")) continue;
+          const data = line.slice(5).trim();
+          if (!data || data === "[DONE]") continue;
+          try {
+            const payload = JSON.parse(data);
+            if (payload.error?.message) throw new Error(payload.error.message);
+            const delta = payload.choices?.[0]?.delta?.content;
+            if (typeof delta === "string") {
+              result += delta;
+              target.textContent = result;
+              messagesEl.scrollTop = messagesEl.scrollHeight;
+            }
+          } catch (error) {
+            if (error instanceof SyntaxError) continue;
+            throw error;
+          }
+        }
+        if (done) break;
+      }
+      if (!result) throw new Error("The model returned an empty response.");
+      return result;
+    }
+
+    async function sendMessage(text) {
+      const content = text.trim();
+      if (!content || busy) return;
+      if (!chat.length) messagesEl.replaceChildren();
+      chat.push({ role: "user", content });
+      addMessage("user", content);
+      promptEl.value = "";
+      resizePrompt();
+      busy = true;
+      sendButton.disabled = true;
+      const waiting = addMessage("assistant", "");
+      waiting.innerHTML = '<span class="typing" aria-label="Thinking"><i></i><i></i><i></i></span>';
+      try {
+        const reply = await streamReply(chat.map((message) => ({ role: message.role, content: message.content })), waiting);
+        chat.push({ role: "assistant", content: reply });
+        updateHistory();
+        if (chat.length === 2) document.querySelector(".topbar-title").textContent = chat[0].content.trim().replace(/\s+/g, " ").slice(0, 48);
+      } catch (error) {
+        waiting.textContent = error.message || "Something went wrong. Please try again.";
+        waiting.classList.add("error");
+        chat.pop();
+      } finally {
+        busy = false;
+        sendButton.disabled = false;
+        promptEl.focus();
+      }
+    }
+
+    chatForm.addEventListener("submit", (event) => { event.preventDefault(); sendMessage(promptEl.value); });
+    promptEl.addEventListener("input", resizePrompt);
+    promptEl.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        chatForm.requestSubmit();
+      }
+    });
+    document.getElementById("newChat").addEventListener("click", newConversation);
+    document.getElementById("mobileNewChat").addEventListener("click", newConversation);
+    showWelcome();
+    renderHistory();
+  </script>
+</body>
+</html>
